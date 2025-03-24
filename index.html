@@ -107,6 +107,9 @@
             color: #333;
             text-align: center;
         }
+        .interest {
+            color: #28a745; /* 綠色字 */
+        }
         table {
             width: 100%;
             border-collapse: collapse;
@@ -121,6 +124,9 @@
         th {
             background: #f8f9fa;
             color: #555;
+        }
+        tr:nth-child(even) {
+            background: #f8f9fa; /* 淺灰色分格 */
         }
         canvas {
             margin-top: 15px;
@@ -185,7 +191,7 @@
                 </div>
                 <div class="content">
                     <div class="input-group">
-                        <label>本金 (P):</label>
+                        <label>初始本金 (P):</label>
                         <input type="number" class="principal" value="${inputs.principal || ''}" placeholder="例如 500000">
                     </div>
                     <div class="input-group">
@@ -199,6 +205,10 @@
                     <div class="input-group">
                         <label>時間 (t，年):</label>
                         <input type="number" class="time" value="${inputs.time || ''}" placeholder="例如 10">
+                    </div>
+                    <div class="input-group">
+                        <label>每年新投入 (A):</label>
+                        <input type="number" class="annualInput" value="${inputs.annualInput || ''}" placeholder="例如 10000">
                     </div>
                     <div class="action-buttons">
                         <button class="calculate">計算</button>
@@ -225,85 +235,81 @@
             document.getElementById('container').appendChild(calcDiv);
         }
 
-        // 計算複利
+        // 計算複利（第一年唔加新投入）
         function calculate(calcId) {
             const calc = document.getElementById(calcId);
-            const P = parseFloat(calc.querySelector('.principal').value);
-            const r = parseFloat(calc.querySelector('.rate').value) / 100;
-            const n = parseFloat(calc.querySelector('.frequency').value);
-            const t = parseFloat(calc.querySelector('.time').value);
+            const P = parseFloat(calc.querySelector('.principal').value) || 0;
+            const r = parseFloat(calc.querySelector('.rate').value) / 100 || 0;
+            const n = parseFloat(calc.querySelector('.frequency').value) || 1;
+            const t = parseFloat(calc.querySelector('.time').value) || 0;
+            const annualInput = parseFloat(calc.querySelector('.annualInput').value) || 0;
 
             if (isNaN(P) || isNaN(r) || isNaN(n) || isNaN(t)) {
-                calc.querySelector('.result').innerHTML = "請輸入所有數字！";
+                calc.querySelector('.result').innerHTML = "請輸入必要數字！";
                 return;
             }
 
-            const A = P * Math.pow(1 + r / n, n * t);
-            const totalInterest = A - P;
-            const totalGrowthPercent = ((A - P) / P) * 100;
-            const totalMultiplier = A / P;
-
-            let tableHTML = '<table><tr><th>年份</th><th>本金</th><th>利息</th><th>總額</th><th>增長%</th><th>倍數</th></tr>';
             let currentPrincipal = P;
+            let totalInput = P;
             const yearlyData = [];
             const chartLabels = [];
             const chartPrincipal = [];
             const chartTotal = [];
+
+            let tableHTML = '<table><tr><th>年份</th><th>年初本金</th><th>新投入</th><th>利息</th><th>年終總額</th><th>增長%</th><th>倍數</th></tr>';
             for (let year = 1; year <= t; year++) {
-                const yearlyAmount = P * Math.pow(1 + r / n, n * year);
+                const startPrincipal = currentPrincipal;
+                const thisYearInput = (year === 1) ? 0 : annualInput; // 第一年唔加新投入
+                currentPrincipal += thisYearInput;
+                totalInput += thisYearInput;
+                const yearlyAmount = currentPrincipal * Math.pow(1 + r / n, n);
                 const yearlyInterest = yearlyAmount - currentPrincipal;
-                const yearlyGrowthPercent = ((yearlyAmount - P) / P) * 100;
-                const yearlyMultiplier = yearlyAmount / P;
+                const yearlyGrowthPercent = totalInput > 0 ? ((yearlyAmount - totalInput) / totalInput) * 100 : 0;
+                const yearlyMultiplier = totalInput > 0 ? yearlyAmount / totalInput : 0;
+
                 tableHTML += `<tr>
                     <td>${year}</td>
-                    <td>$${formatNumber(currentPrincipal)}</td>
-                    <td>$${formatNumber(yearlyInterest)}</td>
+                    <td>$${formatNumber(startPrincipal)}</td>
+                    <td>$${formatNumber(thisYearInput)}</td>
+                    <td class="interest">+$${formatNumber(yearlyInterest)}</td>
                     <td>$${formatNumber(yearlyAmount)}</td>
                     <td>${yearlyGrowthPercent.toFixed(2)}%</td>
                     <td>${yearlyMultiplier.toFixed(2)}</td>
                 </tr>`;
-                yearlyData.push([year, currentPrincipal, yearlyInterest, yearlyAmount, yearlyGrowthPercent, yearlyMultiplier]);
+                yearlyData.push([year, startPrincipal, thisYearInput, yearlyInterest, yearlyAmount, yearlyGrowthPercent, yearlyMultiplier]);
                 chartLabels.push(`第${year}年`);
-                chartPrincipal.push(currentPrincipal);
+                chartPrincipal.push(startPrincipal);
                 chartTotal.push(yearlyAmount);
                 currentPrincipal = yearlyAmount;
             }
             tableHTML += '</table>';
             calc.dataset.yearlyData = JSON.stringify(yearlyData);
 
+            const totalInterest = currentPrincipal - totalInput;
+            const totalGrowthPercent = totalInput > 0 ? (totalInterest / totalInput) * 100 : 0;
+            const totalMultiplier = totalInput > 0 ? currentPrincipal / totalInput : 0;
+
             calc.querySelector('.result').innerHTML = 
-                `最終金額: $${formatNumber(A)}<br>` +
-                `總利息: $${formatNumber(totalInterest)}<br>` +
+                `最終金額: $${formatNumber(currentPrincipal)}<br>` +
+                `總投入: $${formatNumber(totalInput)}<br>` +
+                `<span class="interest">總利息: +$${formatNumber(totalInterest)}</span><br>` +
                 `總增長: ${totalGrowthPercent.toFixed(2)}% (${totalMultiplier.toFixed(2)}x)<br>` +
                 tableHTML;
 
             // 繪製圖表
             const ctx = document.getElementById(`chart-${calcId.split('-')[1]}`).getContext('2d');
-            if (calc.chart) calc.chart.destroy(); // 銷毀舊圖表
+            if (calc.chart) calc.chart.destroy();
             calc.chart = new Chart(ctx, {
                 type: 'line',
                 data: {
                     labels: chartLabels,
                     datasets: [
-                        {
-                            label: '本金',
-                            data: chartPrincipal,
-                            borderColor: '#34c759',
-                            fill: false
-                        },
-                        {
-                            label: '總額',
-                            data: chartTotal,
-                            borderColor: '#1a73e8',
-                            fill: false
-                        }
+                        { label: '年初本金', data: chartPrincipal, borderColor: '#34c759', fill: false },
+                        { label: '年終總額', data: chartTotal, borderColor: '#1a73e8', fill: false }
                     ]
                 },
                 options: {
-                    scales: {
-                        y: { beginAtZero: false },
-                        x: { ticks: { maxRotation: 0, autoSkip: true, maxTicksLimit: 10 } }
-                    },
+                    scales: { y: { beginAtZero: false }, x: { ticks: { maxRotation: 0, autoSkip: true, maxTicksLimit: 10 } } },
                     plugins: { legend: { position: 'top' } }
                 }
             });
@@ -318,9 +324,9 @@
                 return;
             }
 
-            let csv = '年份,本金,利息,總額,增長%,倍數\n';
+            let csv = '年份,年初本金,新投入,利息,年終總額,增長%,倍數\n';
             yearlyData.forEach(row => {
-                csv += `${row[0]},${formatNumber(row[1])},${formatNumber(row[2])},${formatNumber(row[3])},${row[4].toFixed(2)},${row[5].toFixed(2)}\n`;
+                csv += `${row[0]},${row[1].toFixed(2)},${row[2].toFixed(2)},${row[3].toFixed(2)},${row[4].toFixed(2)},${row[5].toFixed(2)},${row[6].toFixed(2)}\n`;
             });
 
             const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
@@ -344,19 +350,20 @@
             saveInputs();
         }
 
-        // 儲存輸入到 localStorage
+        // 儲存輸入
         function saveInputs() {
             const calculators = document.querySelectorAll('.calculator');
             const data = Array.from(calculators).map(calc => ({
                 principal: calc.querySelector('.principal').value,
                 rate: calc.querySelector('.rate').value,
                 frequency: calc.querySelector('.frequency').value,
-                time: calc.querySelector('.time').value
+                time: calc.querySelector('.time').value,
+                annualInput: calc.querySelector('.annualInput').value
             }));
             localStorage.setItem('compoundCalculators', JSON.stringify(data));
         }
 
-        // 載入儲存嘅輸入
+        // 載入輸入
         function loadInputs() {
             const savedData = JSON.parse(localStorage.getItem('compoundCalculators') || '[]');
             if (savedData.length) {
@@ -373,7 +380,8 @@
                 principal: prevCalc.querySelector('.principal').value,
                 rate: prevCalc.querySelector('.rate').value,
                 frequency: prevCalc.querySelector('.frequency').value,
-                time: prevCalc.querySelector('.time').value
+                time: prevCalc.querySelector('.time').value,
+                annualInput: prevCalc.querySelector('.annualInput').value
             } : {};
             createCalculator(inputs);
         });
