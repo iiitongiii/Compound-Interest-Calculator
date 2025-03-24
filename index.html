@@ -2,146 +2,232 @@
 <html lang="zh-HK">
 <head>
     <meta charset="UTF-8">
-    <title>進階複利計算機</title>
+    <title>最佳複利計算機</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         body {
             font-family: 'Segoe UI', Arial, sans-serif;
-            background: #f4f7fa;
+            background: #f0f2f5;
             padding: 20px;
-            max-width: 1200px;
             margin: 0 auto;
         }
         h1 {
-            color: #2c3e50;
+            color: #1a73e8;
             text-align: center;
+            margin-bottom: 20px;
         }
-        #container {
+        .calculator-container {
             display: flex;
             flex-wrap: wrap;
             gap: 20px;
+            justify-content: center;
         }
         .calculator {
             background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            width: 100%;
+            max-width: 400px;
             padding: 20px;
-            border-radius: 10px;
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-            width: 300px;
-            transition: all 0.3s;
+            position: relative;
+            box-sizing: border-box;
         }
-        .calculator.hidden {
+        .calculator.minimized .content {
             display: none;
+        }
+        .title-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+        .title-bar span {
+            font-weight: bold;
+            color: #333;
+        }
+        .controls {
+            display: flex;
+            gap: 10px;
+        }
+        .controls button {
+            background: none;
+            border: none;
+            font-size: 16px;
+            cursor: pointer;
+            color: #666;
+        }
+        .controls button:hover {
+            color: #1a73e8;
+        }
+        .input-group {
+            margin-bottom: 15px;
         }
         label {
             display: block;
-            margin: 10px 0 5px;
-            color: #34495e;
+            margin-bottom: 5px;
+            color: #555;
+            font-size: 14px;
         }
         input {
             width: 100%;
             padding: 8px;
             border: 1px solid #ddd;
-            border-radius: 5px;
+            border-radius: 4px;
             box-sizing: border-box;
+            font-size: 14px;
         }
-        .buttons {
-            margin-top: 15px;
-            display: flex;
-            gap: 10px;
+        .action-buttons {
+            text-align: center;
+            margin: 15px 0;
         }
-        button {
-            padding: 8px 15px;
+        button.calculate, button.export {
+            padding: 10px 20px;
             border: none;
-            border-radius: 5px;
+            border-radius: 4px;
             cursor: pointer;
-            transition: background 0.3s;
+            font-size: 14px;
+            margin: 0 5px;
         }
         button.calculate {
-            background: #3498db;
+            background: #1a73e8;
             color: white;
         }
         button.calculate:hover {
-            background: #2980b9;
+            background: #1557b0;
         }
-        button.toggle {
-            background: #f1c40f;
+        button.export {
+            background: #34c759;
             color: white;
         }
-        button.toggle:hover {
-            background: #d4ac0d;
-        }
-        button.close {
-            background: #e74c3c;
-            color: white;
-        }
-        button.close:hover {
-            background: #c0392b;
+        button.export:hover {
+            background: #28a745;
         }
         .result {
+            font-size: 14px;
+            color: #333;
+            text-align: center;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+            font-size: 12px;
+        }
+        th, td {
+            border: 1px solid #eee;
+            padding: 6px;
+            text-align: right;
+        }
+        th {
+            background: #f8f9fa;
+            color: #555;
+        }
+        canvas {
             margin-top: 15px;
-            font-size: 16px;
-            color: #2c3e50;
+            max-width: 100%;
         }
         #addCalculator {
             display: block;
             margin: 20px auto;
             padding: 10px 20px;
-            background: #2ecc71;
+            background: #1a73e8;
             color: white;
             border: none;
-            border-radius: 5px;
+            border-radius: 4px;
             cursor: pointer;
+            font-size: 14px;
         }
         #addCalculator:hover {
-            background: #27ae60;
+            background: #1557b0;
+        }
+        @media (max-width: 600px) {
+            .calculator {
+                max-width: 100%;
+                padding: 15px;
+            }
+            table {
+                font-size: 10px;
+            }
+            button.calculate, button.export {
+                padding: 8px 15px;
+                font-size: 12px;
+            }
         }
     </style>
 </head>
 <body>
-    <h1>進階複利計算機</h1>
+    <h1>最佳複利計算機</h1>
     <button id="addCalculator">新增計算機</button>
-    <div id="container">
-        <!-- 預設第一個計算機 -->
-        <div class="calculator" id="calc-1">
-            <label>本金 (P): <input type="number" class="principal" placeholder="例如 500000"></label>
-            <label>年利率 (r，%，例如 10): <input type="number" class="rate" placeholder="例如 10"></label>
-            <label>每年計息次數 (n): <input type="number" class="frequency" placeholder="例如 1"></label>
-            <label>時間 (t，年): <input type="number" class\Admin="time" placeholder="例如 10"></label>
-            <div class="buttons">
-                <button class="calculate" onclick="calculate(this)">計一計</button>
-                <button class="toggle" onclick="toggle(this)">隱藏</button>
-                <button class="close" onclick="close(this)">關閉</button>
-            </div>
-            <div class="result"></div>
-        </div>
-    </div>
+    <div class="calculator-container" id="container"></div>
 
     <script>
-        let calcCount = 1; // 從 1 開始，因為已經有預設嘅計算機
+        let calcCount = 0;
 
-        // 新增計算機
-        document.getElementById('addCalculator').addEventListener('click', function() {
+        // 格式化數字加千位分隔符
+        function formatNumber(num) {
+            return num.toFixed(2).replace(/\d(?=(\d{3})+\.)/g, '$&,');
+        }
+
+        // 創建計算機
+        function createCalculator(inputs = {}) {
             calcCount++;
+            const calcId = `calc-${calcCount}`;
             const calcDiv = document.createElement('div');
             calcDiv.className = 'calculator';
-            calcDiv.id = `calc-${calcCount}`;
+            calcDiv.id = calcId;
             calcDiv.innerHTML = `
-                <label>本金 (P): <input type="number" class="principal" placeholder="例如 500000"></label>
-                <label>年利率 (r，%，例如 10): <input type="number" class="rate" placeholder="例如 10"></label>
-                <label>每年計息次數 (n): <input type="number" class="frequency" placeholder="例如 1"></label>
-                <label>時間 (t，年): <input type="number" class="time" placeholder="例如 10"></label>
-                <div class="buttons">
-                    <button class="calculate" onclick="calculate(this)">計一計</button>
-                    <button class="toggle" onclick="toggle(this)">隱藏</button>
-                    <button class="close" onclick="close(this)">關閉</button>
+                <div class="title-bar">
+                    <span>計算機 ${calcCount}</span>
+                    <div class="controls">
+                        <button class="minimize">-</button>
+                        <button class="close">×</button>
+                    </div>
                 </div>
-                <div class="result"></div>
+                <div class="content">
+                    <div class="input-group">
+                        <label>本金 (P):</label>
+                        <input type="number" class="principal" value="${inputs.principal || ''}" placeholder="例如 500000">
+                    </div>
+                    <div class="input-group">
+                        <label>年利率 (r，%):</label>
+                        <input type="number" class="rate" value="${inputs.rate || ''}" placeholder="例如 10">
+                    </div>
+                    <div class="input-group">
+                        <label>每年計息次數 (n):</label>
+                        <input type="number" class="frequency" value="${inputs.frequency || ''}" placeholder="例如 1">
+                    </div>
+                    <div class="input-group">
+                        <label>時間 (t，年):</label>
+                        <input type="number" class="time" value="${inputs.time || ''}" placeholder="例如 10">
+                    </div>
+                    <div class="action-buttons">
+                        <button class="calculate">計算</button>
+                        <button class="export">匯出 CSV</button>
+                    </div>
+                    <div class="result"></div>
+                    <canvas id="chart-${calcCount}"></canvas>
+                </div>
             `;
+
+            // 綁定事件
+            const calcBtn = calcDiv.querySelector('.calculate');
+            const exportBtn = calcDiv.querySelector('.export');
+            const minimizeBtn = calcDiv.querySelector('.minimize');
+            const closeBtn = calcDiv.querySelector('.close');
+            const inputsElements = calcDiv.querySelectorAll('input');
+
+            calcBtn.addEventListener('click', () => calculate(calcId));
+            exportBtn.addEventListener('click', () => exportToCSV(calcId));
+            minimizeBtn.addEventListener('click', () => toggle(calcId));
+            closeBtn.addEventListener('click', () => close(calcId));
+            inputsElements.forEach(input => input.addEventListener('change', () => saveInputs()));
+
             document.getElementById('container').appendChild(calcDiv);
-        });
+        }
 
         // 計算複利
-        function calculate(button) {
-            const calc = button.closest('.calculator');
+        function calculate(calcId) {
+            const calc = document.getElementById(calcId);
             const P = parseFloat(calc.querySelector('.principal').value);
             const r = parseFloat(calc.querySelector('.rate').value) / 100;
             const n = parseFloat(calc.querySelector('.frequency').value);
@@ -153,24 +239,147 @@
             }
 
             const A = P * Math.pow(1 + r / n, n * t);
-            const interest = A - P;
+            const totalInterest = A - P;
+            const totalGrowthPercent = ((A - P) / P) * 100;
+            const totalMultiplier = A / P;
+
+            let tableHTML = '<table><tr><th>年份</th><th>本金</th><th>利息</th><th>總額</th><th>增長%</th><th>倍數</th></tr>';
+            let currentPrincipal = P;
+            const yearlyData = [];
+            const chartLabels = [];
+            const chartPrincipal = [];
+            const chartTotal = [];
+            for (let year = 1; year <= t; year++) {
+                const yearlyAmount = P * Math.pow(1 + r / n, n * year);
+                const yearlyInterest = yearlyAmount - currentPrincipal;
+                const yearlyGrowthPercent = ((yearlyAmount - P) / P) * 100;
+                const yearlyMultiplier = yearlyAmount / P;
+                tableHTML += `<tr>
+                    <td>${year}</td>
+                    <td>$${formatNumber(currentPrincipal)}</td>
+                    <td>$${formatNumber(yearlyInterest)}</td>
+                    <td>$${formatNumber(yearlyAmount)}</td>
+                    <td>${yearlyGrowthPercent.toFixed(2)}%</td>
+                    <td>${yearlyMultiplier.toFixed(2)}</td>
+                </tr>`;
+                yearlyData.push([year, currentPrincipal, yearlyInterest, yearlyAmount, yearlyGrowthPercent, yearlyMultiplier]);
+                chartLabels.push(`第${year}年`);
+                chartPrincipal.push(currentPrincipal);
+                chartTotal.push(yearlyAmount);
+                currentPrincipal = yearlyAmount;
+            }
+            tableHTML += '</table>';
+            calc.dataset.yearlyData = JSON.stringify(yearlyData);
 
             calc.querySelector('.result').innerHTML = 
-                `最終金額: $${A.toFixed(2)}<br>利息: $${interest.toFixed(2)}`;
+                `最終金額: $${formatNumber(A)}<br>` +
+                `總利息: $${formatNumber(totalInterest)}<br>` +
+                `總增長: ${totalGrowthPercent.toFixed(2)}% (${totalMultiplier.toFixed(2)}x)<br>` +
+                tableHTML;
+
+            // 繪製圖表
+            const ctx = document.getElementById(`chart-${calcId.split('-')[1]}`).getContext('2d');
+            if (calc.chart) calc.chart.destroy(); // 銷毀舊圖表
+            calc.chart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: chartLabels,
+                    datasets: [
+                        {
+                            label: '本金',
+                            data: chartPrincipal,
+                            borderColor: '#34c759',
+                            fill: false
+                        },
+                        {
+                            label: '總額',
+                            data: chartTotal,
+                            borderColor: '#1a73e8',
+                            fill: false
+                        }
+                    ]
+                },
+                options: {
+                    scales: {
+                        y: { beginAtZero: false },
+                        x: { ticks: { maxRotation: 0, autoSkip: true, maxTicksLimit: 10 } }
+                    },
+                    plugins: { legend: { position: 'top' } }
+                }
+            });
         }
 
-        // 隱藏/顯示計算機
-        function toggle(button) {
-            const calc = button.closest('.calculator');
-            calc.classList.toggle('hidden');
-            button.textContent = calc.classList.contains('hidden') ? '顯示' : '隱藏';
+        // 匯出 CSV
+        function exportToCSV(calcId) {
+            const calc = document.getElementById(calcId);
+            const yearlyData = JSON.parse(calc.dataset.yearlyData || '[]');
+            if (!yearlyData.length) {
+                alert('請先計算！');
+                return;
+            }
+
+            let csv = '年份,本金,利息,總額,增長%,倍數\n';
+            yearlyData.forEach(row => {
+                csv += `${row[0]},${formatNumber(row[1])},${formatNumber(row[2])},${formatNumber(row[3])},${row[4].toFixed(2)},${row[5].toFixed(2)}\n`;
+            });
+
+            const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(blob);
+            link.download = `複利計算_${calcId}.csv`;
+            link.click();
         }
 
-        // 關閉計算機
-        function close(button) {
-            const calc = button.closest('.calculator');
-            calc.remove();
+        // 收起/展開
+        function toggle(calcId) {
+            const calc = document.getElementById(calcId);
+            calc.classList.toggle('minimized');
         }
+
+        // 關閉
+        function close(calcId) {
+            const calc = document.getElementById(calcId);
+            if (calc && calc.chart) calc.chart.destroy();
+            if (calc) calc.remove();
+            saveInputs();
+        }
+
+        // 儲存輸入到 localStorage
+        function saveInputs() {
+            const calculators = document.querySelectorAll('.calculator');
+            const data = Array.from(calculators).map(calc => ({
+                principal: calc.querySelector('.principal').value,
+                rate: calc.querySelector('.rate').value,
+                frequency: calc.querySelector('.frequency').value,
+                time: calc.querySelector('.time').value
+            }));
+            localStorage.setItem('compoundCalculators', JSON.stringify(data));
+        }
+
+        // 載入儲存嘅輸入
+        function loadInputs() {
+            const savedData = JSON.parse(localStorage.getItem('compoundCalculators') || '[]');
+            if (savedData.length) {
+                savedData.forEach(inputs => createCalculator(inputs));
+            } else {
+                createCalculator();
+            }
+        }
+
+        // 綁定「新增計算機」
+        document.getElementById('addCalculator').addEventListener('click', () => {
+            const prevCalc = document.getElementById(`calc-${calcCount}`);
+            const inputs = prevCalc ? {
+                principal: prevCalc.querySelector('.principal').value,
+                rate: prevCalc.querySelector('.rate').value,
+                frequency: prevCalc.querySelector('.frequency').value,
+                time: prevCalc.querySelector('.time').value
+            } : {};
+            createCalculator(inputs);
+        });
+
+        // 初始化
+        loadInputs();
     </script>
 </body>
 </html>
