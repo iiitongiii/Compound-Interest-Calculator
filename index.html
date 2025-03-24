@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="zh-HK">
+<head>
+    <meta charset="UTF-8">
+    <title>進階複利計算機</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Arial, sans-serif;
+            background: #f4f7fa;
+            padding: 20px;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        h1 {
+            color: #2c3e50;
+            text-align: center;
+        }
+        #container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+        }
+        .calculator {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            width: 300px;
+            transition: all 0.3s;
+        }
+        .calculator.hidden {
+            display: none;
+        }
+        label {
+            display: block;
+            margin: 10px 0 5px;
+            color: #34495e;
+        }
+        input {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            box-sizing: border-box;
+        }
+        .buttons {
+            margin-top: 15px;
+            display: flex;
+            gap: 10px;
+        }
+        button {
+            padding: 8px 15px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+        button.calculate {
+            background: #3498db;
+            color: white;
+        }
+        button.calculate:hover {
+            background: #2980b9;
+        }
+        button.toggle {
+            background: #f1c40f;
+            color: white;
+        }
+        button.toggle:hover {
+            background: #d4ac0d;
+        }
+        button.close {
+            background: #e74c3c;
+            color: white;
+        }
+        button.close:hover {
+            background: #c0392b;
+        }
+        .result {
+            margin-top: 15px;
+            font-size: 16px;
+            color: #2c3e50;
+        }
+        #addCalculator {
+            display: block;
+            margin: 20px auto;
+            padding: 10px 20px;
+            background: #2ecc71;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        #addCalculator:hover {
+            background: #27ae60;
+        }
+    </style>
+</head>
+<body>
+    <h1>進階複利計算機</h1>
+    <button id="addCalculator">新增計算機</button>
+    <div id="container">
+        <!-- 預設第一個計算機 -->
+        <div class="calculator" id="calc-1">
+            <label>本金 (P): <input type="number" class="principal" placeholder="例如 500000"></label>
+            <label>年利率 (r，%，例如 10): <input type="number" class="rate" placeholder="例如 10"></label>
+            <label>每年計息次數 (n): <input type="number" class="frequency" placeholder="例如 1"></label>
+            <label>時間 (t，年): <input type="number" class\Admin="time" placeholder="例如 10"></label>
+            <div class="buttons">
+                <button class="calculate" onclick="calculate(this)">計一計</button>
+                <button class="toggle" onclick="toggle(this)">隱藏</button>
+                <button class="close" onclick="close(this)">關閉</button>
+            </div>
+            <div class="result"></div>
+        </div>
+    </div>
+
+    <script>
+        let calcCount = 1; // 從 1 開始，因為已經有預設嘅計算機
+
+        // 新增計算機
+        document.getElementById('addCalculator').addEventListener('click', function() {
+            calcCount++;
+            const calcDiv = document.createElement('div');
+            calcDiv.className = 'calculator';
+            calcDiv.id = `calc-${calcCount}`;
+            calcDiv.innerHTML = `
+                <label>本金 (P): <input type="number" class="principal" placeholder="例如 500000"></label>
+                <label>年利率 (r，%，例如 10): <input type="number" class="rate" placeholder="例如 10"></label>
+                <label>每年計息次數 (n): <input type="number" class="frequency" placeholder="例如 1"></label>
+                <label>時間 (t，年): <input type="number" class="time" placeholder="例如 10"></label>
+                <div class="buttons">
+                    <button class="calculate" onclick="calculate(this)">計一計</button>
+                    <button class="toggle" onclick="toggle(this)">隱藏</button>
+                    <button class="close" onclick="close(this)">關閉</button>
+                </div>
+                <div class="result"></div>
+            `;
+            document.getElementById('container').appendChild(calcDiv);
+        });
+
+        // 計算複利
+        function calculate(button) {
+            const calc = button.closest('.calculator');
+            const P = parseFloat(calc.querySelector('.principal').value);
+            const r = parseFloat(calc.querySelector('.rate').value) / 100;
+            const n = parseFloat(calc.querySelector('.frequency').value);
+            const t = parseFloat(calc.querySelector('.time').value);
+
+            if (isNaN(P) || isNaN(r) || isNaN(n) || isNaN(t)) {
+                calc.querySelector('.result').innerHTML = "請輸入所有數字！";
+                return;
+            }
+
+            const A = P * Math.pow(1 + r / n, n * t);
+            const interest = A - P;
+
+            calc.querySelector('.result').innerHTML = 
+                `最終金額: $${A.toFixed(2)}<br>利息: $${interest.toFixed(2)}`;
+        }
+
+        // 隱藏/顯示計算機
+        function toggle(button) {
+            const calc = button.closest('.calculator');
+            calc.classList.toggle('hidden');
+            button.textContent = calc.classList.contains('hidden') ? '顯示' : '隱藏';
+        }
+
+        // 關閉計算機
+        function close(button) {
+            const calc = button.closest('.calculator');
+            calc.remove();
+        }
+    </script>
+</body>
+</html>
